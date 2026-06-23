@@ -45,7 +45,7 @@ node_modules/
 
 ```text
 Root Directory: leave blank
-Build Command: npm install
+Build Command: npm install && npm run build
 Start Command: npm start
 Health Check Path: /api/health
 ```

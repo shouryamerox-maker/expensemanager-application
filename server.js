@@ -7,6 +7,7 @@ const path = require("path");
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
+const DIST_DIR = path.join(ROOT, "dist");
 const DATA_DIR = path.join(ROOT, "data");
 const SQLITE_PATH = path.join(DATA_DIR, "expense-manager.sqlite");
 const LEGACY_JSON_PATH = path.join(DATA_DIR, "database.json");
@@ -179,9 +180,10 @@ async function handleApi(req, res, url) {
 
 function serveStatic(res, pathname) {
   const cleanPath = pathname === "/" ? "/index.html" : pathname;
-  const fullPath = path.join(ROOT, cleanPath);
+  const staticRoot = fs.existsSync(path.join(DIST_DIR, "index.html")) ? DIST_DIR : ROOT;
+  const fullPath = path.join(staticRoot, cleanPath);
 
-  if (!fullPath.startsWith(ROOT) || !fs.existsSync(fullPath) || fs.statSync(fullPath).isDirectory()) {
+  if (!fullPath.startsWith(staticRoot) || !fs.existsSync(fullPath) || fs.statSync(fullPath).isDirectory()) {
     sendText(res, 404, "Not found");
     return;
   }

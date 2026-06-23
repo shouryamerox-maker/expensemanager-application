@@ -22,6 +22,30 @@ Open:
 http://localhost:3000
 ```
 
+## React development mode
+
+This branch uses Vite React for the frontend.
+
+Terminal 1, start the backend API:
+
+```powershell
+npm start
+```
+
+Terminal 2, start the React dev server:
+
+```powershell
+npm run dev
+```
+
+Open the Vite URL, usually:
+
+```text
+http://localhost:5173
+```
+
+The Vite server proxies `/api` requests to the Node backend on port `3000`.
+
 Without `DATABASE_URL`, the app uses local SQLite:
 
 ```text
