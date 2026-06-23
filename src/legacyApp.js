@@ -509,12 +509,12 @@ function renderTransactions() {
     .map(
       (expense) => `
         <tr>
-          <td>${formatDate(expense.date)}<br><small>${formatTime(expense.time)}</small></td>
-          <td>${escapeHtml(expense.category)}</td>
-          <td>${money(expense.amount)}</td>
-          <td>${escapeHtml(expense.note)}</td>
-          <td>${escapeHtml(expense.paymentMethod || "Cash")}</td>
-          <td>
+          <td data-label="Date">${formatDate(expense.date)}<br><small>${formatTime(expense.time)}</small></td>
+          <td data-label="Category">${escapeHtml(expense.category)}</td>
+          <td data-label="Amount">${money(expense.amount)}</td>
+          <td data-label="Note">${escapeHtml(expense.note)}</td>
+          <td data-label="Payment">${escapeHtml(expense.paymentMethod || "Cash")}</td>
+          <td data-label="Actions">
             <button class="secondary-button" type="button" data-edit-expense="${expense.id}">Edit</button>
             <button class="danger-button" type="button" data-delete-expense="${expense.id}">Delete</button>
           </td>

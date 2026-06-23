@@ -33,6 +33,7 @@ body[data-theme="light"] {
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -44,6 +45,7 @@ body {
   font-family: Inter, "Segoe UI", Arial, sans-serif;
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   transition: background 260ms ease, color 260ms ease;
 }
 
@@ -231,6 +233,10 @@ label span,
   top: 0;
 }
 
+.sidebar-overlay {
+  display: none;
+}
+
 body[data-theme="light"] .sidebar {
   background: rgba(255, 255, 255, 0.82);
 }
@@ -312,6 +318,19 @@ body[data-theme="light"] .sidebar {
 
 .menu-button {
   display: none;
+}
+
+.menu-icon {
+  display: grid;
+  gap: 4px;
+  width: 18px;
+}
+
+.menu-icon span {
+  background: currentColor;
+  border-radius: 999px;
+  display: block;
+  height: 2px;
 }
 
 .month-picker {
@@ -467,6 +486,7 @@ body[data-theme="light"] .sidebar {
 
 .table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -686,6 +706,7 @@ body[data-theme="light"] .achievement-card {
     left: 0;
     max-width: 292px;
     position: fixed;
+    overflow-y: auto;
     top: 0;
     transform: translateX(-105%);
     transition: transform 220ms ease;
@@ -699,9 +720,23 @@ body[data-theme="light"] .achievement-card {
 
   .sidebar-overlay {
     background: rgba(2, 6, 23, 0.62);
+    display: block;
     inset: 0;
     position: fixed;
     z-index: 25;
+  }
+
+  .brand-block {
+    align-items: flex-start;
+  }
+
+  .nav-list a {
+    min-height: 44px;
+    padding: 12px;
+  }
+
+  .sidebar-footer {
+    display: grid;
   }
 
   .workspace {
@@ -735,6 +770,7 @@ body[data-theme="light"] .achievement-card {
 
   .menu-button {
     display: inline-flex;
+    gap: 8px;
     width: max-content;
   }
 
@@ -746,7 +782,7 @@ body[data-theme="light"] .achievement-card {
   .file-button {
     border-radius: 10px;
     font-size: 0.88rem;
-    min-height: 38px;
+    min-height: 44px;
     padding: 0 12px;
   }
 
@@ -754,8 +790,81 @@ body[data-theme="light"] .achievement-card {
   select,
   textarea {
     border-radius: 10px;
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  textarea {
+    min-height: 190px;
+  }
+
+  .auth-screen {
+    align-items: start;
+    padding: 14px;
+  }
+
+  .auth-card {
+    border-radius: 16px;
+    gap: 12px;
+    padding: 18px;
+  }
+
+  .auth-card h1 {
+    font-size: 2rem;
+    line-height: 1.05;
+  }
+
+  .auth-card button {
+    width: 100%;
+  }
+
+  .quick-command {
+    align-items: stretch;
+  }
+
+  .quick-command button,
+  .assistant-box button {
+    width: 100%;
+  }
+
+  .month-picker input {
+    width: 100%;
+  }
+
+  .toast-stack {
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+  }
+
+  .toast {
+    max-width: none;
+    width: 100%;
+  }
+
+  .section-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .section-heading .toolbar {
+    width: 100%;
+  }
+
+  .toolbar button,
+  .backup-toolbar button,
+  .backup-toolbar .file-button {
+    flex: 1 1 140px;
+  }
+
+  .pagination {
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .pagination span {
+    color: var(--muted);
     font-size: 0.92rem;
-    min-height: 40px;
   }
 
   .glass-card,
@@ -803,21 +912,20 @@ body[data-theme="light"] .achievement-card {
   }
 
   .analytics-grid {
-    display: flex;
-    gap: 10px;
-    margin: 0 -12px;
-    overflow-x: auto;
-    padding: 0 12px 12px;
-    scroll-snap-type: x mandatory;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 1fr;
+    margin-bottom: 12px;
   }
 
   .analytics-grid .chart-card {
-    flex: 0 0 min(86vw, 360px);
-    scroll-snap-align: start;
+    min-width: 0;
   }
 
   .chart-card canvas {
-    height: 132px;
+    display: block;
+    height: 150px;
+    width: 100%;
   }
 
   .chart-card .section-heading {
@@ -826,8 +934,8 @@ body[data-theme="light"] .achievement-card {
 
   .heatmap {
     gap: 4px;
-    grid-template-columns: repeat(7, 34px);
-    overflow-x: auto;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    overflow: visible;
   }
 
   .heat-cell {
@@ -893,6 +1001,250 @@ body[data-theme="light"] .achievement-card {
 
   .calendar-day {
     min-height: 64px;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace {
+    padding: 10px;
+  }
+
+  .topbar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .topbar .menu-button {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .topbar > div {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .topbar .month-picker {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .quick-command,
+  .dashboard-transactions,
+  .kpi-grid {
+    margin-bottom: 10px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-card {
+    min-height: 116px;
+  }
+
+  .sparkline {
+    max-height: 22px;
+  }
+
+  .expense-form {
+    grid-template-columns: 1fr;
+  }
+
+  .expense-form label:nth-child(3),
+  .expense-form button {
+    grid-column: auto;
+  }
+
+  .table-wrap {
+    overflow: visible;
+  }
+
+  table {
+    min-width: 0;
+  }
+
+  table thead {
+    display: none;
+  }
+
+  table,
+  tbody,
+  tr,
+  td {
+    display: block;
+    width: 100%;
+  }
+
+  tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  tr {
+    background: rgba(15, 23, 42, 0.26);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 10px;
+  }
+
+  body[data-theme="light"] tr {
+    background: rgba(255, 255, 255, 0.58);
+  }
+
+  td {
+    align-items: start;
+    border-bottom: 0;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(84px, 34%) minmax(0, 1fr);
+    padding: 8px 0;
+    word-break: break-word;
+  }
+
+  td::before {
+    color: var(--muted);
+    content: attr(data-label);
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  td[data-label="Amount"] {
+    color: var(--primary);
+    font-weight: 900;
+  }
+
+  td[data-label="Actions"] {
+    grid-template-columns: 1fr;
+  }
+
+  td[data-label="Actions"]::before {
+    display: none;
+  }
+
+  td[data-label="Actions"] button {
+    width: 100%;
+  }
+
+  .pagination {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .pagination button {
+    width: 100%;
+  }
+
+  .pagination span {
+    order: -1;
+    text-align: center;
+  }
+
+  .calendar-grid {
+    gap: 4px;
+  }
+
+  .calendar-day {
+    border-radius: 8px;
+    font-size: 0.78rem;
+    min-height: 52px;
+    padding: 5px;
+  }
+
+  .calendar-day small {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(34, 197, 94, 0.14), transparent 20rem),
+      var(--bg);
+  }
+
+  .workspace {
+    padding: 8px;
+  }
+
+  .sidebar {
+    max-width: none;
+    width: min(88vw, 318px);
+  }
+
+  .brand-mark {
+    border-radius: 12px;
+    height: 40px;
+    width: 40px;
+  }
+
+  .topbar h1 {
+    font-size: 1.45rem;
+  }
+
+  .topbar .eyebrow {
+    display: none;
+  }
+
+  .glass-card,
+  .chart-card {
+    padding: 10px;
+  }
+
+  .kpi-card strong {
+    font-size: 1.3rem;
+  }
+
+  .kpi-top {
+    gap: 8px;
+  }
+
+  .trend {
+    white-space: nowrap;
+  }
+
+  .chart-card canvas {
+    height: 128px;
+  }
+
+  .section-heading h2 {
+    font-size: 0.95rem;
+  }
+
+  .section-heading span,
+  .kpi-card small,
+  .status-text,
+  .assistant-output,
+  .record-card,
+  .progress-card,
+  .insight-card,
+  .achievement-card {
+    font-size: 0.86rem;
+  }
+
+  .heat-cell {
+    border-radius: 8px;
+    font-size: 0.68rem;
+    min-height: 30px;
+    padding: 4px 2px;
+    text-align: center;
+  }
+
+  .heat-cell small {
+    display: none;
+  }
+
+  .toolbar,
+  .backup-toolbar,
+  .sidebar-footer {
+    gap: 8px;
+  }
+
+  .toolbar button,
+  .backup-toolbar button,
+  .backup-toolbar .file-button {
+    flex-basis: 100%;
+    width: 100%;
   }
 }
 

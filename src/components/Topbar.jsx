@@ -2,7 +2,8 @@ export default function Topbar() {
   return (
     <header className="topbar">
       <button id="menuBtn" className="menu-button" type="button" aria-expanded="false" aria-controls="sidebar">
-        Menu
+        <span className="menu-icon" aria-hidden="true"><span /><span /><span /></span>
+        <span>Menu</span>
       </button>
       <div>
         <p className="eyebrow">Commercial-grade student fintech</p>
