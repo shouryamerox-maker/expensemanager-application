@@ -41,7 +41,7 @@ node_modules/
 4. Use these settings:
 
 ```text
-Root Directory: expense-manager
+Root Directory: leave blank
 Build Command: npm install
 Start Command: npm start
 Health Check Path: /api/health
