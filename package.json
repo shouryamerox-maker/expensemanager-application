@@ -1,0 +1,13 @@
+{
+  "name": "expense-manager",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.16",
+    "pg": "^8.22.0"
+  }
+}
