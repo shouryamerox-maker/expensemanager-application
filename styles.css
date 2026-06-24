@@ -428,6 +428,11 @@ body[data-theme="light"] .sidebar {
   margin: 16px 0;
 }
 
+.mobile-daily-records,
+.mobile-add-transaction {
+  display: none;
+}
+
 .wide-card {
   grid-column: span 2;
 }
@@ -1075,165 +1080,261 @@ body[data-theme="light"] .achievement-card {
   }
 
   .table-wrap {
-    overflow: visible;
-  }
-
-  table {
-    min-width: 0;
-  }
-
-  table thead {
     display: none;
   }
 
-  table,
-  tbody,
-  tr,
-  td {
-    display: block;
-    width: 100%;
+  .pagination {
+    display: none;
   }
 
-  tbody {
+  .mobile-daily-records {
+    display: grid;
+    gap: 10px;
+  }
+
+  .mobile-record-controls {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .mobile-record-controls::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-record-controls button {
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    color: var(--muted);
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 0 12px;
+    white-space: nowrap;
+  }
+
+  .mobile-record-controls button.is-active {
+    background: rgba(34, 197, 94, 0.16);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: var(--primary);
+  }
+
+  .mobile-custom-date {
+    backdrop-filter: blur(18px);
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 10px;
+  }
+
+  .mobile-record-totals {
     display: grid;
     gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  tr {
+  .mobile-record-totals article {
     background:
       linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
       rgba(15, 23, 42, 0.42);
     border: 1px solid var(--line);
     border-radius: 13px;
     box-shadow: 0 12px 34px rgba(2, 6, 23, 0.18);
-    display: grid;
-    gap: 7px 10px;
-    grid-template-areas:
-      "note amount"
-      "date category"
-      "payment payment"
-      "actions actions";
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding: 12px;
+    min-width: 0;
+    padding: 10px;
   }
 
-  body[data-theme="light"] tr {
+  body[data-theme="light"] .mobile-record-totals article {
     background: rgba(255, 255, 255, 0.76);
   }
 
-  td {
-    align-items: center;
-    border-bottom: 0;
-    display: flex;
-    gap: 6px;
-    min-width: 0;
-    padding: 0;
-    word-break: break-word;
-  }
-
-  td::before {
+  .mobile-record-totals span {
     color: var(--muted);
-    content: attr(data-label);
-    font-size: 0.72rem;
-    font-weight: 900;
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 850;
     text-transform: uppercase;
   }
 
-  td[data-label="Date"] {
-    grid-area: date;
-  }
-
-  td[data-label="Category"] {
-    grid-area: category;
-    justify-self: end;
-    max-width: 100%;
-  }
-
-  td[data-label="Payment"] {
-    grid-area: payment;
-  }
-
-  td[data-label="Note"] {
-    color: var(--text);
-    font-size: 0.96rem;
-    font-weight: 850;
-    grid-area: note;
-    line-height: 1.25;
-    min-width: 0;
-  }
-
-  td[data-label="Note"]::before {
-    display: none;
-  }
-
-  td[data-label="Amount"] {
-    color: var(--primary);
-    font-size: 1rem;
-    font-weight: 900;
-    grid-area: amount;
-    justify-self: end;
-    white-space: nowrap;
-  }
-
-  td[data-label="Amount"]::before {
-    display: none;
-  }
-
-  td[data-label="Date"],
-  td[data-label="Category"],
-  td[data-label="Payment"] {
-    background: rgba(148, 163, 184, 0.11);
-    border: 1px solid rgba(148, 163, 184, 0.12);
-    border-radius: 999px;
-    color: var(--muted);
-    font-size: 0.76rem;
-    line-height: 1.2;
-    max-width: 100%;
-    padding: 6px 8px;
-  }
-
-  td[data-label="Date"]::before,
-  td[data-label="Category"]::before,
-  td[data-label="Payment"]::before {
-    display: none;
-  }
-
-  td[data-label="Category"] {
-    color: var(--primary);
+  .mobile-record-totals strong {
+    display: block;
+    font-size: 0.9rem;
+    margin-top: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  td[data-label="Actions"] {
+  .mobile-daily-list {
+    display: grid;
+    gap: 9px;
+  }
+
+  .mobile-day-card,
+  .mobile-empty-state {
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
+      rgba(15, 23, 42, 0.42);
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    box-shadow: 0 14px 42px rgba(2, 6, 23, 0.2);
+    padding: 10px;
+  }
+
+  body[data-theme="light"] .mobile-day-card,
+  body[data-theme="light"] .mobile-empty-state {
+    background: rgba(255, 255, 255, 0.76);
+  }
+
+  .mobile-day-summary {
+    background: transparent;
+    color: var(--text);
     display: grid;
     gap: 8px;
-    grid-area: actions;
-    grid-template-columns: 1fr;
-    margin-top: 4px;
-  }
-
-  td[data-label="Actions"]::before {
-    display: none;
-  }
-
-  td[data-label="Actions"] button {
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 0;
+    padding: 0;
+    text-align: left;
     width: 100%;
   }
 
-  .pagination {
+  .mobile-day-summary:hover {
+    box-shadow: none;
+  }
+
+  .mobile-day-summary strong,
+  .mobile-day-summary small {
+    display: block;
+  }
+
+  .mobile-day-summary small {
+    color: var(--muted);
+    font-size: 0.76rem;
+    font-weight: 750;
+    margin-top: 3px;
+  }
+
+  .mobile-day-balance {
+    align-self: start;
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.16);
+    border-radius: 999px;
+    color: var(--primary);
+    font-size: 0.86rem;
+    font-weight: 950;
+    padding: 6px 8px;
+    white-space: nowrap;
+  }
+
+  .mobile-day-metrics {
     display: grid;
-    grid-template-columns: 1fr;
+    gap: 7px;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 9px;
+  }
+
+  .mobile-day-metrics span {
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 11px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    padding: 7px 8px;
+  }
+
+  .mobile-day-metrics strong {
+    color: var(--text);
+    display: block;
+    font-size: 0.84rem;
+    margin-top: 2px;
+  }
+
+  .mobile-day-details {
+    border-top: 1px solid var(--line);
+    display: grid;
+    gap: 8px;
     margin-top: 10px;
+    padding-top: 10px;
   }
 
-  .pagination button {
-    width: 100%;
+  .mobile-transaction-card {
+    align-items: start;
+    background: rgba(15, 23, 42, 0.24);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 12px;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 10px;
   }
 
-  .pagination span {
-    order: -1;
+  body[data-theme="light"] .mobile-transaction-card {
+    background: rgba(255, 255, 255, 0.56);
+  }
+
+  .mobile-transaction-card strong,
+  .mobile-transaction-card span {
+    display: block;
+    min-width: 0;
+  }
+
+  .mobile-transaction-card div > strong {
+    font-size: 0.9rem;
+    line-height: 1.25;
+  }
+
+  .mobile-transaction-card div > span {
+    color: var(--muted);
+    font-size: 0.74rem;
+    line-height: 1.35;
+    margin-top: 3px;
+  }
+
+  .mobile-transaction-card.is-income .mobile-transaction-amount {
+    color: var(--primary);
+  }
+
+  .mobile-transaction-card.is-expense .mobile-transaction-amount {
+    color: #fecaca;
+  }
+
+  .mobile-transaction-amount {
+    font-size: 0.88rem;
+    white-space: nowrap;
+  }
+
+  .mobile-transaction-actions {
+    display: grid;
+    gap: 7px;
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .mobile-transaction-actions button,
+  .mobile-day-details > button,
+  .mobile-empty-state button {
+    min-height: 38px;
+  }
+
+  .mobile-empty-state {
+    display: grid;
+    gap: 8px;
     text-align: center;
+  }
+
+  .mobile-empty-state p {
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+
+  .mobile-add-transaction {
+    bottom: max(14px, env(safe-area-inset-bottom));
+    box-shadow: 0 18px 42px rgba(34, 197, 94, 0.28);
+    display: inline-flex;
+    position: sticky;
+    z-index: 12;
+    width: 100%;
   }
 
   .calendar-grid {
@@ -1350,19 +1451,15 @@ body[data-theme="light"] .achievement-card {
     width: 100%;
   }
 
-  tr {
+  .mobile-day-card,
+  .mobile-empty-state {
     border-radius: 12px;
-    grid-template-areas:
-      "note amount"
-      "date date"
-      "category category"
-      "payment payment"
-      "actions actions";
-    padding: 11px;
+    padding: 9px;
   }
 
-  td[data-label="Category"] {
-    justify-self: stretch;
+  .mobile-record-totals article,
+  .mobile-transaction-card {
+    padding: 9px;
   }
 }
 

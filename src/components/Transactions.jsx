@@ -18,6 +18,25 @@ export default function Transactions() {
         <select id="transactionFilter"><option value="">All categories</option></select>
         <select id="transactionSort"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="amountDesc">Amount high</option><option value="amountAsc">Amount low</option></select>
       </div>
+      <section className="mobile-daily-records" aria-label="Mobile daily records">
+        <div className="mobile-record-controls" id="mobileRecordFilter">
+          <button className="is-active" type="button" data-record-range="today">Today</button>
+          <button type="button" data-record-range="week">Week</button>
+          <button type="button" data-record-range="month">Month</button>
+          <button type="button" data-record-range="custom">Custom</button>
+        </div>
+        <label className="mobile-custom-date" htmlFor="mobileCustomDate" hidden>
+          <span>Choose date</span>
+          <input id="mobileCustomDate" type="date" />
+        </label>
+        <div className="mobile-record-controls mobile-type-controls" id="mobileRecordType">
+          <button className="is-active" type="button" data-record-type="all">All</button>
+          <button type="button" data-record-type="expense">Expense</button>
+          <button type="button" data-record-type="income">Income</button>
+        </div>
+        <div id="mobileRecordTotals" className="mobile-record-totals" />
+        <div id="mobileDailyList" className="mobile-daily-list" />
+      </section>
       <div className="table-wrap">
         <table>
           <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Note</th><th>Payment</th><th>Actions</th></tr></thead>
@@ -29,6 +48,7 @@ export default function Transactions() {
         <span id="pageInfo" />
         <button id="nextPageBtn" className="secondary-button" type="button">Next</button>
       </div>
+      <button id="mobileAddTransactionBtn" className="mobile-add-transaction" type="button">+ Add Transaction</button>
     </section>
   );
 }

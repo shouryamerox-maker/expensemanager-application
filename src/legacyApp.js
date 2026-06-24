@@ -39,6 +39,10 @@ let state = normalizeState(loadState());
 let currentEmail = sessionStorage.getItem(SESSION_EMAIL_KEY) || "";
 let currentView = "dashboard";
 let currentPage = 1;
+let dailyRecordRange = "today";
+let dailyRecordType = "all";
+let dailyRecordCustomDate = toDateInput(new Date());
+const expandedDailyRecords = new Set();
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -83,6 +87,12 @@ const el = {
   transactionSearch: $("#transactionSearch"),
   transactionFilter: $("#transactionFilter"),
   transactionSort: $("#transactionSort"),
+  mobileRecordFilter: $("#mobileRecordFilter"),
+  mobileRecordType: $("#mobileRecordType"),
+  mobileCustomDate: $("#mobileCustomDate"),
+  mobileRecordTotals: $("#mobileRecordTotals"),
+  mobileDailyList: $("#mobileDailyList"),
+  mobileAddTransactionBtn: $("#mobileAddTransactionBtn"),
   prevPageBtn: $("#prevPageBtn"),
   nextPageBtn: $("#nextPageBtn"),
   pageInfo: $("#pageInfo"),
@@ -135,6 +145,7 @@ const today = new Date();
 el.monthFilter.value = toMonthInput(today);
 el.expenseDate.value = toDateInput(today);
 el.expenseTime.value = toTimeInput(today);
+el.mobileCustomDate.value = toDateInput(today);
 el.debtDue.value = toDateInput(today);
 el.feeDate.value = toDateInput(today);
 el.goalDate.value = toDateInput(new Date(today.getFullYear(), today.getMonth() + 6, today.getDate()));
@@ -225,6 +236,7 @@ el.themeCycleBtn.addEventListener("click", () => {
 
 el.monthFilter.addEventListener("change", () => {
   currentPage = 1;
+  expandedDailyRecords.clear();
   render();
 });
 
@@ -265,6 +277,52 @@ el.transactionFilter.addEventListener("change", () => {
   renderTransactions();
 });
 el.transactionSort.addEventListener("change", renderTransactions);
+el.mobileRecordFilter.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-record-range]");
+  if (!button) return;
+  dailyRecordRange = button.dataset.recordRange;
+  expandedDailyRecords.clear();
+  $$("#mobileRecordFilter [data-record-range]").forEach((item) => item.classList.toggle("is-active", item === button));
+  el.mobileCustomDate.hidden = dailyRecordRange !== "custom";
+  renderTransactions();
+});
+el.mobileRecordType.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-record-type]");
+  if (!button) return;
+  dailyRecordType = button.dataset.recordType;
+  expandedDailyRecords.clear();
+  $$("#mobileRecordType [data-record-type]").forEach((item) => item.classList.toggle("is-active", item === button));
+  renderTransactions();
+});
+el.mobileCustomDate.addEventListener("change", () => {
+  dailyRecordCustomDate = el.mobileCustomDate.value || toDateInput(new Date());
+  expandedDailyRecords.clear();
+  renderTransactions();
+});
+el.mobileDailyList.addEventListener("click", (event) => {
+  if (event.target.closest("[data-edit-expense], [data-delete-expense]")) {
+    handleTransactionAction(event);
+    return;
+  }
+  const toggleButton = event.target.closest("[data-toggle-day]");
+  if (toggleButton) {
+    const day = toggleButton.dataset.toggleDay;
+    if (expandedDailyRecords.has(day)) {
+      expandedDailyRecords.delete(day);
+    } else {
+      expandedDailyRecords.add(day);
+    }
+    renderTransactions();
+    return;
+  }
+  const addButton = event.target.closest("[data-add-for-day]");
+  if (addButton) {
+    prepareExpenseForDay(addButton.dataset.addForDay);
+  }
+});
+el.mobileAddTransactionBtn.addEventListener("click", () => {
+  prepareExpenseForDay(toDateInput(new Date()));
+});
 el.prevPageBtn.addEventListener("click", () => {
   currentPage = Math.max(1, currentPage - 1);
   renderTransactions();
@@ -525,6 +583,102 @@ function renderTransactions() {
   el.pageInfo.textContent = `Page ${currentPage} of ${maxPage} · ${rows.length} rows`;
   el.prevPageBtn.disabled = currentPage <= 1;
   el.nextPageBtn.disabled = currentPage >= maxPage;
+  renderMobileDailyRecords();
+}
+
+function renderMobileDailyRecords() {
+  const expenseRows = filteredExpensesForDailyRecords();
+  const incomeRows = filteredWalletEntriesForDailyRecords();
+  const visibleExpenses = dailyRecordType === "income" ? [] : expenseRows;
+  const visibleIncomes = dailyRecordType === "expense" ? [] : incomeRows;
+  const totalIncome = sum(visibleIncomes);
+  const totalExpense = sum(visibleExpenses);
+  const dates = [...new Set([...visibleExpenses.map((item) => item.date), ...visibleIncomes.map((item) => item.date)].filter(Boolean))].sort((a, b) => b.localeCompare(a));
+
+  el.mobileRecordTotals.innerHTML = `
+    <article><span>Income</span><strong>${money(totalIncome)}</strong></article>
+    <article><span>Expense</span><strong>${money(totalExpense)}</strong></article>
+    <article><span>Balance</span><strong>${money(totalIncome - totalExpense)}</strong></article>
+  `;
+
+  if (!dates.length) {
+    el.mobileDailyList.innerHTML = `
+      <article class="mobile-empty-state">
+        <strong>No transactions found.</strong>
+        <p>Try another filter or add a new transaction.</p>
+        <button type="button" data-add-for-day="${escapeHtml(toDateInput(new Date()))}">Add Transaction</button>
+      </article>
+    `;
+    return;
+  }
+
+  el.mobileDailyList.innerHTML = dates
+    .map((date) => {
+      const dayExpenses = visibleExpenses.filter((expense) => expense.date === date).sort((a, b) => `${b.date}T${b.time}`.localeCompare(`${a.date}T${a.time}`));
+      const dayIncomes = visibleIncomes.filter((entry) => entry.date === date);
+      const income = sum(dayIncomes);
+      const expense = sum(dayExpenses);
+      const count = dayExpenses.length + dayIncomes.length;
+      const expanded = expandedDailyRecords.has(date);
+      return `
+        <article class="mobile-day-card ${expanded ? "is-expanded" : ""}">
+          <button class="mobile-day-summary" type="button" data-toggle-day="${escapeHtml(date)}" aria-expanded="${expanded}">
+            <span>
+              <strong>${dayLabel(date)}</strong>
+              <small>${count} transaction${count === 1 ? "" : "s"}</small>
+            </span>
+            <span class="mobile-day-balance">${money(income - expense)}</span>
+          </button>
+          <div class="mobile-day-metrics">
+            <span>Income <strong>${money(income)}</strong></span>
+            <span>Expense <strong>${money(expense)}</strong></span>
+          </div>
+          <div class="mobile-day-details" ${expanded ? "" : "hidden"}>
+            ${renderMobileIncomeCards(dayIncomes)}
+            ${renderMobileExpenseCards(dayExpenses)}
+            ${count ? "" : `<p class="status-text">No transactions found for this day.</p>`}
+            <button class="secondary-button" type="button" data-add-for-day="${escapeHtml(date)}">Add transaction for this day</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderMobileExpenseCards(expenses) {
+  return expenses
+    .map(
+      (expense) => `
+        <article class="mobile-transaction-card is-expense">
+          <div>
+            <strong>${escapeHtml(expense.note || expense.category)}</strong>
+            <span>${escapeHtml(expense.category)} Â· ${escapeHtml(expense.paymentMethod || "Cash")} Â· ${formatTime(expense.time)}</span>
+          </div>
+          <strong class="mobile-transaction-amount">-${money(expense.amount)}</strong>
+          <div class="mobile-transaction-actions">
+            <button class="secondary-button" type="button" data-edit-expense="${expense.id}">Edit</button>
+            <button class="danger-button" type="button" data-delete-expense="${expense.id}">Delete</button>
+          </div>
+        </article>
+      `
+    )
+    .join("");
+}
+
+function renderMobileIncomeCards(entries) {
+  return entries
+    .map(
+      (entry) => `
+        <article class="mobile-transaction-card is-income">
+          <div>
+            <strong>${escapeHtml(entry.note || "Wallet income")}</strong>
+            <span>Income Â· ${formatDate(entry.date)}</span>
+          </div>
+          <strong class="mobile-transaction-amount">+${money(entry.amount)}</strong>
+        </article>
+      `
+    )
+    .join("");
 }
 
 function renderBudgets() {
@@ -739,6 +893,61 @@ function filteredExpenses() {
     return `${b.date}T${b.time}`.localeCompare(`${a.date}T${a.time}`);
   });
   return sorted;
+}
+
+function filteredExpensesForDailyRecords() {
+  const q = el.transactionSearch.value.toLowerCase();
+  const category = el.transactionFilter.value;
+  const sort = el.transactionSort.value;
+  const rows = state.expenses
+    .filter((expense) => isInDailyRecordRange(expense.date))
+    .filter((expense) => !category || expense.category === category)
+    .filter((expense) => [expense.note, expense.category, expense.paymentMethod].join(" ").toLowerCase().includes(q));
+  rows.sort((a, b) => {
+    if (sort === "oldest") return `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`);
+    if (sort === "amountDesc") return b.amount - a.amount;
+    if (sort === "amountAsc") return a.amount - b.amount;
+    return `${b.date}T${b.time}`.localeCompare(`${a.date}T${a.time}`);
+  });
+  return rows;
+}
+
+function filteredWalletEntriesForDailyRecords() {
+  return state.walletEntries
+    .filter((entry) => isInDailyRecordRange(entry.date))
+    .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+}
+
+function isInDailyRecordRange(date) {
+  if (!date) return false;
+  const today = toDateInput(new Date());
+  if (dailyRecordRange === "today") return date === today;
+  if (dailyRecordRange === "custom") return date === (el.mobileCustomDate.value || dailyRecordCustomDate);
+  if (dailyRecordRange === "week") {
+    const current = new Date(`${today}T00:00:00`);
+    const start = new Date(current);
+    start.setDate(current.getDate() - current.getDay());
+    const end = new Date(current);
+    end.setDate(current.getDate() + 6);
+    return date >= toDateInput(start) && date <= toDateInput(end);
+  }
+  return date.startsWith(el.monthFilter.value);
+}
+
+function prepareExpenseForDay(date) {
+  el.expenseDate.value = date || toDateInput(new Date());
+  el.expenseTime.value = toTimeInput(new Date());
+  el.expenseForm.scrollIntoView({ behavior: "smooth", block: "start" });
+  el.expenseAmount.focus();
+}
+
+function dayLabel(date) {
+  const today = toDateInput(new Date());
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date === today) return `Today, ${formatDate(date)}`;
+  if (date === toDateInput(yesterday)) return `Yesterday, ${formatDate(date)}`;
+  return formatDate(date);
 }
 
 function computeInsights() {
