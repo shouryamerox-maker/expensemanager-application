@@ -1,0 +1,5 @@
+{
+  "appId": "com.meroxio.expensemanager",
+  "appName": "Expense Manager",
+  "webDir": "dist"
+}

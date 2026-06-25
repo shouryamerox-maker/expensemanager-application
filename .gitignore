@@ -3,3 +3,4 @@ data/
 .env
 npm-debug.log
 dist/
+vite-*.log

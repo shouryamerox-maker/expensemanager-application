@@ -2,18 +2,21 @@
   "name": "expense-manager",
   "version": "1.0.0",
   "private": true,
-  "main": "server.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "postinstall": "npm run build",
-    "preview": "vite preview",
-    "start": "node server.js"
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "start": "vite preview --host 0.0.0.0 --port 3000",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@supabase/supabase-js": "^2.108.2",
     "@vitejs/plugin-react": "^6.0.3",
-    "nodemailer": "^6.9.16",
-    "pg": "^8.22.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "vite": "^8.1.0"

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { hasSupabaseConfig, supabase } from "./lib/supabaseClient.js";
 
 const APP_KEY = "simple-expense-mobile-v1";
 const LEGACY_KEY = "student-finance-platform-v1";
@@ -24,6 +25,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [transactions, setTransactions] = useState(() => loadInitialData());
   const [settings, setSettings] = useState(() => loadSettings());
+  const [session, setSession] = useState(null);
+  const [authMode, setAuthMode] = useState("signin");
+  const [authForm, setAuthForm] = useState({ email: "", password: "" });
+  const [authStatus, setAuthStatus] = useState("");
+  const [isBooting, setIsBooting] = useState(hasSupabaseConfig);
+  const [syncStatus, setSyncStatus] = useState(hasSupabaseConfig ? "Checking account..." : "Local test mode");
   const [form, setForm] = useState(blankForm);
   const [editingId, setEditingId] = useState("");
   const [historyMonth, setHistoryMonth] = useState(currentMonth());
@@ -33,6 +40,29 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(APP_KEY, JSON.stringify({ transactions, settings }));
   }, [transactions, settings]);
+
+  useEffect(() => {
+    if (!hasSupabaseConfig) return;
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setSession(data.session);
+      if (data.session) {
+        loadCloudData(data.session.user.id);
+      } else {
+        setIsBooting(false);
+        setSyncStatus("Sign in to sync");
+      }
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      if (nextSession) loadCloudData(nextSession.user.id);
+    });
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     document.body.dataset.theme = settings.theme;
@@ -51,7 +81,63 @@ export default function App() {
       .sort(sortNewest);
   }, [monthRows, historyCategory, search]);
 
-  function saveTransaction(event) {
+  async function loadCloudData(userId) {
+    setIsBooting(true);
+    setSyncStatus("Syncing...");
+    try {
+      const [{ data: rows, error: rowsError }, { data: cloudSettings, error: settingsError }] = await Promise.all([
+        supabase.from("transactions").select("*").eq("user_id", userId).order("date", { ascending: false }),
+        supabase.from("user_settings").select("currency, theme").eq("user_id", userId).maybeSingle(),
+      ]);
+      if (rowsError) throw rowsError;
+      if (settingsError) throw settingsError;
+      const mappedRows = (rows || []).map(fromDatabaseRow);
+      const localRows = loadInitialData();
+      if (!mappedRows.length && localRows.length) {
+        await syncLocalRowsToCloud(userId, localRows);
+        setTransactions(localRows);
+      } else {
+        setTransactions(mappedRows);
+      }
+      if (cloudSettings) setSettings({ currency: cloudSettings.currency || "INR", theme: cloudSettings.theme || "dark" });
+      setSyncStatus("Cloud sync on");
+    } catch (error) {
+      setSyncStatus(`Cloud sync failed: ${error.message}`);
+    } finally {
+      setIsBooting(false);
+    }
+  }
+
+  async function syncLocalRowsToCloud(userId, rows) {
+    if (!rows.length) return;
+    const { error } = await supabase.from("transactions").upsert(rows.map((row) => toDatabaseRow(row, userId)));
+    if (error) throw error;
+  }
+
+  async function handleAuth(event) {
+    event.preventDefault();
+    setAuthStatus("Please wait...");
+    const email = authForm.email.trim();
+    const password = authForm.password;
+    const result = authMode === "signup"
+      ? await supabase.auth.signUp({ email, password })
+      : await supabase.auth.signInWithPassword({ email, password });
+    if (result.error) {
+      setAuthStatus(result.error.message);
+      return;
+    }
+    setAuthStatus(authMode === "signup" ? "Account created. Check email if confirmation is enabled." : "Signed in.");
+  }
+
+  async function signOut() {
+    if (!hasSupabaseConfig) return;
+    await supabase.auth.signOut();
+    setSession(null);
+    setTransactions(loadInitialData());
+    setSyncStatus("Signed out");
+  }
+
+  async function saveTransaction(event) {
     event.preventDefault();
     const amount = Number(form.amount);
     if (!amount || amount <= 0) return;
@@ -64,6 +150,10 @@ export default function App() {
       updatedAt: new Date().toISOString(),
     };
     setTransactions((items) => (editingId ? items.map((item) => (item.id === editingId ? payload : item)) : [payload, ...items]));
+    if (session) {
+      const { error } = await supabase.from("transactions").upsert(toDatabaseRow(payload, session.user.id));
+      setSyncStatus(error ? `Save failed: ${error.message}` : "Saved to cloud");
+    }
     setForm(blankForm());
     setEditingId("");
     setActiveTab("home");
@@ -82,22 +172,58 @@ export default function App() {
     setActiveTab("add");
   }
 
-  function deleteTransaction(id) {
+  async function deleteTransaction(id) {
     if (!confirm("Delete this transaction?")) return;
     setTransactions((items) => items.filter((item) => item.id !== id));
+    if (session) {
+      const { error } = await supabase.from("transactions").delete().eq("id", id).eq("user_id", session.user.id);
+      setSyncStatus(error ? `Delete failed: ${error.message}` : "Deleted from cloud");
+    }
   }
 
-  function clearAllData() {
+  async function clearAllData() {
     if (!confirm("Clear all app data from this device?")) return;
     setTransactions([]);
     setForm(blankForm());
     setEditingId("");
     localStorage.removeItem(APP_KEY);
+    if (session && confirm("Also delete all cloud transactions for this account?")) {
+      const { error } = await supabase.from("transactions").delete().eq("user_id", session.user.id).neq("id", "00000000-0000-0000-0000-000000000000");
+      setSyncStatus(error ? `Cloud clear failed: ${error.message}` : "Cloud data cleared");
+    }
+  }
+
+  async function updateSettings(nextSettings) {
+    setSettings(nextSettings);
+    if (session) {
+      const { error } = await supabase.from("user_settings").upsert({
+        user_id: session.user.id,
+        currency: nextSettings.currency,
+        theme: nextSettings.theme,
+        updated_at: new Date().toISOString(),
+      });
+      setSyncStatus(error ? `Settings sync failed: ${error.message}` : "Settings synced");
+    }
+  }
+
+  if (isBooting) return <LoadingScreen />;
+
+  if (hasSupabaseConfig && !session) {
+    return (
+      <AuthScreen
+        mode={authMode}
+        setMode={setAuthMode}
+        form={authForm}
+        setForm={setAuthForm}
+        status={authStatus}
+        onSubmit={handleAuth}
+      />
+    );
   }
 
   return (
     <main className="mobile-app-shell">
-      <AppHeader activeTab={activeTab} settings={settings} />
+      <AppHeader activeTab={activeTab} settings={settings} syncStatus={syncStatus} />
 
       {activeTab === "home" && (
         <HomeScreen
@@ -145,7 +271,7 @@ export default function App() {
       {activeTab === "insights" && <InsightsScreen money={money} rows={currentMonthRows} />}
 
       {activeTab === "settings" && (
-        <SettingsScreen settings={settings} setSettings={setSettings} onClear={clearAllData} />
+        <SettingsScreen settings={settings} setSettings={updateSettings} onClear={clearAllData} session={session} onSignOut={signOut} syncStatus={syncStatus} />
       )}
 
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -153,7 +279,47 @@ export default function App() {
   );
 }
 
-function AppHeader({ activeTab, settings }) {
+function LoadingScreen() {
+  return (
+    <main className="mobile-app-shell center-shell">
+      <section className="panel">
+        <h1>Expense Manager</h1>
+        <p className="empty-copy">Preparing your workspace...</p>
+      </section>
+    </main>
+  );
+}
+
+function AuthScreen({ mode, setMode, form, setForm, status, onSubmit }) {
+  return (
+    <main className="mobile-app-shell auth-shell">
+      <section className="auth-card">
+        <div>
+          <span>Cloud account</span>
+          <h1>{mode === "signup" ? "Create account" : "Welcome back"}</h1>
+          <p>Use one account to sync expenses across phone and web.</p>
+        </div>
+        <form className="screen-stack" onSubmit={onSubmit}>
+          <label>
+            <span>Email</span>
+            <input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} autoComplete="email" required />
+          </label>
+          <label>
+            <span>Password</span>
+            <input type="password" minLength="6" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} autoComplete={mode === "signup" ? "new-password" : "current-password"} required />
+          </label>
+          <button className="primary-action" type="submit">{mode === "signup" ? "Create account" : "Sign in"}</button>
+        </form>
+        <button className="secondary-action" type="button" onClick={() => setMode(mode === "signup" ? "signin" : "signup")}>
+          {mode === "signup" ? "I already have an account" : "Create new account"}
+        </button>
+        {status && <p className="empty-copy">{status}</p>}
+      </section>
+    </main>
+  );
+}
+
+function AppHeader({ activeTab, settings, syncStatus }) {
   const titles = {
     home: "Expense Manager",
     add: "Add Transaction",
@@ -166,6 +332,7 @@ function AppHeader({ activeTab, settings }) {
       <div>
         <span>{settings.currency}</span>
         <h1>{titles[activeTab]}</h1>
+        <small>{syncStatus}</small>
       </div>
       <div className="app-dot" aria-hidden="true" />
     </header>
@@ -301,7 +468,7 @@ function InsightsScreen({ money, rows }) {
   );
 }
 
-function SettingsScreen({ settings, setSettings, onClear }) {
+function SettingsScreen({ settings, setSettings, onClear, session, onSignOut, syncStatus }) {
   return (
     <section className="screen-stack">
       <article className="panel settings-panel">
@@ -319,10 +486,11 @@ function SettingsScreen({ settings, setSettings, onClear }) {
           </select>
         </label>
         <button className="danger-action" type="button" onClick={onClear}>Clear all data</button>
+        {session && <button className="secondary-action" type="button" onClick={onSignOut}>Sign out</button>}
       </article>
       <article className="panel">
         <h2>App info</h2>
-        <p className="empty-copy">Your data is stored on this device using localStorage in this test version. No backend login is used here.</p>
+        <p className="empty-copy">{session ? `Signed in as ${session.user.email}. ${syncStatus}` : "Local test mode is active until Supabase keys are configured."}</p>
       </article>
     </section>
   );
@@ -433,7 +601,8 @@ function sumRows(rows, type) {
 
 function formatMoney(value, currency) {
   const config = currencies[currency] || currencies.INR;
-  return `${config.symbol}${Number(value || 0).toLocaleString(config.locale, { maximumFractionDigits: 0 })}`;
+  const symbol = currency === "INR" ? "\u20b9" : currency === "EUR" ? "\u20ac" : config.symbol;
+  return `${symbol}${Number(value || 0).toLocaleString(config.locale, { maximumFractionDigits: 0 })}`;
 }
 
 function sortNewest(a, b) {
@@ -464,6 +633,35 @@ function mapCategory(category = "") {
   if (/movie|game|entertainment/.test(lower)) return "Entertainment";
   if (/shopping|amazon|flipkart|shirt|shoe/.test(lower)) return "Shopping";
   return "Other";
+}
+
+function toDatabaseRow(item, userId) {
+  return {
+    id: item.id,
+    user_id: userId,
+    type: item.type,
+    amount: Number(item.amount),
+    category: item.category,
+    date: item.date,
+    payment_mode: item.paymentMode,
+    note: item.note || "",
+    created_at: item.createdAt || new Date().toISOString(),
+    updated_at: item.updatedAt || new Date().toISOString(),
+  };
+}
+
+function fromDatabaseRow(row) {
+  return normalizeTransaction({
+    id: row.id,
+    type: row.type,
+    amount: row.amount,
+    category: row.category,
+    date: row.date,
+    paymentMode: row.payment_mode,
+    note: row.note,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  });
 }
 
 function readJson(value) {
