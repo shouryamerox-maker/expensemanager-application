@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MeroxIO mark">
+  <defs>
+    <linearGradient id="meroxioMarkGradient" x1="120" y1="122" x2="392" y2="372" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D7FF57"/>
+      <stop offset="0.18" stop-color="#9DFF55"/>
+      <stop offset="0.58" stop-color="#45DF58"/>
+      <stop offset="1" stop-color="#23B84B"/>
+    </linearGradient>
+    <filter id="meroxioGlow" x="-22%" y="-22%" width="144%" height="144%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.32 0 0 0 0 1 0 0 0 0 0.32 0 0 0 0.55 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#meroxioGlow)" fill="none" stroke="url(#meroxioMarkGradient)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M128 356V176L256 304M384 356V218"/>
+    <path d="M256 304L404 156"/>
+  </g>
+  <path fill="#D7FF57" d="M394 118 454 102 438 162Z"/>
+  <path fill="#F1FFD1" fill-opacity=".28" d="M172 220 256 304 340 220v28l-84 84-84-84z"/>
+</svg>
